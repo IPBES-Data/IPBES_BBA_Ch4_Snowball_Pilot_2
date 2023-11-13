@@ -1,0 +1,16 @@
+Scientific peer reviewed literature on dependencies
+
+Carvalho et al. 2023. From impacts to dependencies: A first global assessment of corporate biodiversity risk exposure and responses, Bus Strat Env. 32:2600-2614https://doi.org/10.1002/bse.3142 <https://doi.org/10.1002/bse.3142>
+Ingram et al. 2022. Opportunities for businesses to use and support development ofSEEA-aligned natural capital accounts, Ecosystem Services55, 101434https://doi.org/10.1016/j.ecoser.2022.101434 <https://doi.org/10.1016/j.ecoser.2022.101434>
+Rugani B, OssetP, Blanc O, Benetto E. (2023) Environmental Footprint Neutrality Using Methods and Tools for Natural Capital Accounting in Life Cycle Assessment. Land. 12(6):1171. https://doi.org/10.3390/land12061171 <https://doi.org/10.3390/land12061171>
+Houdet, J., Ding, H., Quétier, F., Addison, P., Deshmukh, P. (2020). Adapting double-entry bookkeeping to renewable natural capital: An application to corporate net biodiversity impact accounting and disclosure, Ecosystem Services, Volume 45. https://doi.org/10.1016/j.ecoser.2020.101104 <https://doi.org/10.1016/j.ecoser.2020.101104>
+Leach K, Grigg A, O'Connor B, Brown C, Vause J, GheyssensJ, WeatherdonL, Halle M, Burgess ND, Fletcher R, Bekker S, King S and Jones M. (2019). A common framework of natural capital assets for use in public and private sector decision making. Ecosystem Services 36: pp. 100899. https://dx.doi.org/10.1016/j.ecoser.2019.100899 <https://dx.doi.org/10.1016/j.ecoser.2019.100899>
+Harrison PA, Dunford R, Barton DN, Kelemen E, Martín-López B, Norton L, Termansen M, Saarikoski H, Hendriks K, Gómez-BaggethunE, CzúczB, García-Llorente M, Howard D, Jacobs S, Karlsen M, KopperoinenL, Madsen A, Rusch G, van Eupen M, Verweij P, Smith R, TuomasjukkaD and ZulianG. (2018). Selecting methods for ecosystem service assessment: A decision tree approach. Ecosystem Services 29: pp. 481-498. https://doi.org/10.1016/j.ecoser.2017.09.016
+Bagstad, K. J., F. Villa, D. Batker, J. Harrison-Cox, B. Voigt, and G. W. Johnson (2014). From theoretical to actual ecosystem services: mapping beneficiaries and spatial flows in ecosystem service assessments. Ecology and Society 19(2): 64. http://dx.doi.org/10.5751/ES-06523-190264 <http://dx.doi.org/10.5751/ES-06523-190264>
+
+Applications
+
+WEF and PWC. (2020). Nature Risk Rising: Why the Crisis Engulfing Nature Matters for Business and the Economy. World Economic Forum and PricewaterhouseCoopers,  Davos.
+van Toor, J., Pilic, D., Schellekens, G., van Oorschot M. and Kok M. (2020) Indebted to Nature: Exploring biodiversity risks for the Dutch financial sector.
+DNB, the Dutch Central Bank and PBL, Netherlands Environmental Assessment Agency 2020 Report Number: PBL report number 4215. Amsterdam, the Hague:
+Kan D., Patel R., Leach K., Bekker S., Dawkins K.and Broer W. (2021). Biodiversity impact and ecosystem service dependencies. Integration of dependencies using the BFFI and ENCORE. PRéSustainability, CREM & UN-WCMC.

@@ -1,0 +1,208 @@
+---
+title: "Business and Biopdiversity - Ch 2 - Snowball - Pilot 2"
+author: Rainer M Krug <Rainer.Krug@senckenberg.de> <Rainer@krugs.de>
+format:
+    html:
+        toc: true
+        toc-depth: 4
+        embed-resources: true
+        code-fold: true
+        code-summary: "Show the code"
+params:
+    key_papers:
+        - "from email.csv"
+---
+
+# Setup
+```{r}
+#| label: setup
+#|
+if (!exists("params")){
+    params <- rmarkdown::yaml_front_matter('~/Documents_Local/git/IPBES_data_tsu/Assessments/Business/IPBES_BBA_Ch4_Snowball_Pilot_2/snowball.qmd')$params
+}
+
+library(bibtex)
+library(openalexR)
+library(IPBES.R)
+
+library(tibble)
+suppressPackageStartupMessages(library(dplyr))
+
+# library(writexl)
+# library(ggplot2)
+# library(ggraph)
+# library(tidygraph)
+
+library(knitr)
+
+x <- list.files(
+    "R",
+    full.names = TRUE,
+    recursive = TRUE
+) |>
+    sapply(
+        FUN <- source
+    )
+
+
+kp <- read.csv(
+    file.path("Key Papers", params$key_papers[1]),
+    header = TRUE, 
+    sep = ",", 
+    quote = "\"",
+)
+```
+
+## Back to [Readme](https://IPBES-Data.github.io/IPBES_BBA_Ch2_Snowball_Pilot_2/)
+
+## One Generation Snowball
+
+### Setup OpenAlex usage and do snowball serarch
+
+```{r}
+#| label: openalex_prep
+#|
+
+
+fn <- file.path(".", "data", "key_works.rds")
+if (file.exists(fn)) {
+    key_works <- readRDS(fn)
+} else {
+    dois <- kp$DOI[kp$DOI != ""] |>
+        unique()
+    key_works <- oa_fetch(
+        entity = "works",
+        doi = dois,
+        verbose = FALSE
+    )
+    saveRDS(key_works, fn)
+}
+
+ids <- openalexR:::shorten_oaid(key_works$id)
+
+fn <- file.path(".", "data", "snowball.rds")
+if (file.exists(fn)) {
+    snowball <- readRDS(fn)
+} else {
+    snowball <- oa_snowball(
+        identifier = ids,
+        verbose = FALSE
+    )
+    saveRDS(snowball, fn)
+}
+
+flat_snow <- snowball2df(snowball)  |>
+ tibble::as_tibble()
+```
+
+### Save snowball as Excel file ([`snowball.xlsx`](data/snowball.xlsx))
+
+```{r}
+#| label: openalex_excel
+#| eval: true
+
+fn <- file.path(".", "data", "snowball.xlsx")
+if (!file.exists(fn)) {
+    to_xlsx(
+        snowball = snowball,
+        xls_filename = fn
+    )
+}
+```
+
+To download [click here](data/snowball.xlsx)
+
+The column are: (the Concept columns are not that relevant at the moment)
+
+- **id**: internal id fromOpenAlex
+- **author**: authors of the paper
+- **publication_year**: publication year
+- **title**: title of the paper
+- **doi**: doi of the paper
+- **no_referenced_works**: number of references in the paper which are also in OpenAlex
+- **cited_global**: Number of times the paper has been cited
+- **cited_global_per_year**: standardised  number of times cirted (cited_global / number of years published)
+- **no_connections**: number of connections in the rgaph, i.e. either cited or citing a paper in the snowball corpus
+- **concepts_l0**: Concept 0. level assigned by OpenAlex
+- **concepts_l1**: Concept 1. level assigned by OpenAlex
+- **concepts_l2**: Concept 2. level assigned by OpenAlex
+- **concepts_l3**: Concept 3. level assigned by OpenAlex
+- **concepts_l4**: Concept 4. level assigned by OpenAlex
+- **concepts_l5**: Concept 5. level assigned by OpenAlex
+- **author_institute**: Institute of the authors
+- **institute_country**: Country of the institute
+- **abstract**: the abstract of the paper
+
+
+### Citation Network between Works
+
+```{r}
+#| label: openalex_graph
+
+if (!file.exists(file.path("figures", "snowball_cited_by_count.png"))) {
+    plot_snowball(
+        snowball,
+        name = "snowball"
+    )
+}
+```
+![Snowball Cited by Count per Yeart](figures/snowball_cited_by_count_by_year.png)
+Fer a pdf of the graph (better resolution) [click here](figures/snowball_cited_by_count_by_year.pdf)
+
+## Supplemented Snowball by Edges between all Works
+
+We now supplement the citation network with the citations from the non-key papers, as these are not included in the previous network
+
+```{r}
+#| label: openalex_supplement
+#| 
+
+fn <- file.path("data", "snowball_supplemented.rds")
+if (file.exists(fn)) {
+    snowball_supplemented <- readRDS(fn)
+} else {
+    new_edges <- tibble(
+        from = character(0),
+        to = character(0)
+    )
+
+    works <- snowball$nodes$id
+
+    for (i in 1:nrow(snowball$nodes)) {
+        from <- works[[i]]
+        to <- gsub("https://openalex.org/", "", snowball$nodes$referenced_works[[i]])
+        to_in_works <- to[to %in% works]
+        if (length(to_in_works) > 0) {
+            new_edges <- add_row(
+                new_edges,
+                tibble(
+                    from = from,
+                    to = to_in_works
+                )
+            )
+        }
+    }
+
+    snowball_supplemented <- snowball
+    snowball_supplemented$edges <- add_row(snowball_supplemented$edges, new_edges) |>
+        dplyr::distinct()
+    saveRDS(snowball_supplemented, fn)
+}
+
+```
+
+### Supplemented Citation Network between Works
+```{r}
+#| label: openalex_supplement_graph
+#| 
+
+if (!file.exists(file.path("figures", "snowball_supplemented_cited_by_count.png"))) {
+    IPBES.R::plot_snowball(
+        snowball_supplemented, 
+        name = "snowball_supplemented", 
+        path = "figures"
+    )
+}
+```
+![Supplemented Cited by count](figures/snowball_supplemented_cited_by_count_by_year.png)
+For a pdf of the reaults (better resolution) [click here](figures/snowball_supplemented_cited_by_count_by_year.pdf)

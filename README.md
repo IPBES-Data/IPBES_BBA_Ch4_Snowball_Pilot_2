@@ -49,6 +49,7 @@ Once finalised, the final repo will be published on Zenodo.
   - [Ranske](mailto:Renske.Gudde@Senckenberg.de)
 
 - **Github Repo**: [IPBES_BBA_Ch4_Snowball_Pilot_2](https://github.com/rkrug/IPBES_BBA_Ch4_Snowball_Pilot_2)
+- **Website**: [IPBES_BBA_Ch4_Snowball_Pilot_2](https://rkrug.github.io/IPBES_BBA_Ch4_Snowball_Pilot_2/)
 - **Googel Drive Folder**: None at the moment0
 
 ## Folders

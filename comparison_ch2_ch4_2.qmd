@@ -1,0 +1,514 @@
+---
+title: "Business and Biodiversity - Ch 2 - Snowball - Pilot 2"
+author: Rainer M Krug <Rainer.Krug@senckenberg.de> <Rainer@krugs.de>
+date: "`r Sys.Date()`"
+css: style.css
+format:
+    html:
+        toc: true
+        toc-depth: 4
+        embed-resources: true
+        code-fold: true
+        code-summary: "Show the code"
+        grid:
+            sidebar-width: 0px
+            body-width: 4000px
+            margin-width: 200px
+            gutter-width: 1.5rem      
+
+---
+
+# Setup
+```{r}
+#| label: setup
+#|
+
+library(tibble)
+suppressPackageStartupMessages({
+    library(bibtex)
+    library(openalexR)
+    library(IPBES.R)
+    library(dplyr)
+    library(knitr)
+    library(networkD3)
+    library(ggplot2)
+    library(tidygraph)
+    library(readxl)
+    library(grDevices)
+})
+
+file.create("figures_comp", showWarnings = FALSE)
+```
+
+
+## Back to [Readme](https://IPBES-Data.github.io/IPBES_BBA_Ch4_Snowball_Pilot_2/)
+
+## Read snowball results from Ch2 and Ch 4 2
+
+```{r}
+#| label: snowball_read
+
+selected_papers <- readxl::read_excel(
+    file.path(".", "data_ch2", "selected_papers.xlsx"),
+    skip = 1
+)$id
+
+kp_ids <- readRDS(file.path(".", "data_ch2", "key_works.rds"))$id |>
+    gsub(pattern = "https://openalex.org/", replacement = "")
+
+snowball_ch2 <- readRDS(
+    file.path(".", "data_ch2", "snowball.rds")
+)
+snowball_ch2$nodes <- snowball_ch2$nodes |>
+    # dplyr::filter(id %in% selected_papers) |>
+    dplyr::mutate(
+        cited_by_count_by_year = cited_by_count / (2024 - publication_year),
+        chapter = "Chapter 2",
+        key_paper = id %in% kp_ids,
+        paper_type = ifelse(
+            key_paper,
+            "Ch 2 KP",
+            "Ch 2"
+        )
+    )
+snowball_ch2$nodes$auth_abbr <- IPBES.R::abbreviate_authors(snowball_ch2$nodes)
+snowball_ch2$edges <- snowball_ch2$edges |>
+    dplyr::filter((from %in% selected_papers) & (to %in% selected_papers))
+
+# flat_snow_ch2 <- snowball2df(snowball_ch2) |>
+#     tibble::as_tibble()
+
+rm(selected_papers, kp_ids)
+
+kp_ids <- readRDS(file.path(".", "data", "key_works.rds"))$id |>
+    gsub(pattern = "https://openalex.org/", replacement = "")
+snowball_ch4_2 <- readRDS(
+    file.path(".", "data", "snowball.rds")
+)
+snowball_ch4_2$nodes <- snowball_ch4_2$nodes |>
+    dplyr::mutate(
+        cited_by_count_by_year = cited_by_count / (2024 - publication_year),
+        chapter = "Chapter 4",
+        key_paper = id %in% kp_ids,
+        paper_type = ifelse(
+            key_paper,
+            "Ch 4 2 KP",
+            "Ch 4 2"
+        )
+    )
+snowball_ch4_2$nodes$auth_abbr <- IPBES.R::abbreviate_authors(snowball_ch4_2$nodes)
+# flat_snow_c4_2 <- snowball2df(snowball_ch4_2) |>
+#     tibble::as_tibble()
+
+rm(kp_ids)
+```
+
+## Merge two snowballs into one
+
+```{r}
+#| label: snowball_merge
+#| eval: true
+
+snowball <- snowball_ch2
+
+snowball$nodes <- rbind(snowball$nodes, snowball_ch4_2$nodes) |>
+    dplyr::group_by(id, .drop = FALSE) |>
+    mutate(chapter = paste(chapter, collapse = " & ")) |>
+    mutate(paper_type = paste(paper_type, collapse = " & ")) |>
+    ungroup() |>
+    distinct(id, .keep_all = TRUE)
+snowball$edges <- rbind(snowball$edges, snowball_ch4_2$edges) |>
+    dplyr::distinct()
+
+connected <- snowball$edges |>
+    unlist() |>
+    unique()
+
+snowball_connected <- snowball
+snowball_connected$nodes <- snowball_connected$nodes |>
+    dplyr::filter(id %in% connected)
+
+rm(connected)
+```
+
+# Static Plots
+
+## All included Papers
+
+All references. The points are only in Chapter 2 and their kay papers have been removed from the snowball corpus.
+
+```{r}
+#| label: plot_static_all
+
+p <- snowball |>
+    tidygraph::as_tbl_graph() |>
+    ggraph::ggraph(graph = , layout = "stress") +
+    ggraph::geom_edge_link(
+        aes(
+            alpha = ggplot2::after_stat(index),
+            # edge_width = ggplot2::after_stat(index)
+        ),
+        show.legend = FALSE
+    ) +
+    ggraph::geom_node_point(
+        ggplot2::aes(
+            size = cited_by_count_by_year,
+            col = paper_type
+        )
+    ) +
+    ggraph::geom_node_label(
+        ggplot2::aes(
+            filter = key_paper,
+            label = auth_abbr
+        ),
+        nudge_y = 0.2,
+        size = 3
+    ) +
+    ggraph::scale_edge_width(
+        range = c(0.1, 1.5),
+        guide = "none"
+    ) +
+    ggplot2::scale_size(
+        range = c(3, 10),
+        name = "Cited by average count per year"
+    ) +
+    ggplot2::scale_colour_manual(
+        values = c("red", "blue", "green", "yellow", "purple", "orange", "pink", "brown"),
+        na.value = "grey",
+        name = "Key Paper",
+        guide = guide_legend()
+    ) +
+    ggraph::theme_graph() +
+    ggplot2::theme(
+        plot.background = element_rect(fill = "transparent", colour = NA),
+        panel.background = element_rect(fill = "transparent", colour = NA),
+        legend.position = "right"
+    ) +
+    ggplot2::guides(fill = "none") +
+    ggplot2::ggtitle(paste0(" Cited by average count per year"))
+
+ggplot2::ggsave(
+    file.path("figures_comp", "all.pdf"),
+    plot = p,
+    device = grDevices::cairo_pdf,
+    width = 20,
+    height = 15
+)
+ggplot2::ggsave(
+    file.path("figures_comp", "all.png"),
+    plot = p,
+    width = 20,
+    height = 15,
+    bg = "white"
+)
+```
+![](figures_comp/all.png)
+
+A highres version can be downloaded [here](figures_comp/all.pdf).
+
+## Connected Papers
+
+A subset excluding the references which are not part of the network but isolated points.
+
+```{r} 
+#| label: plot_static_connected
+
+p <- snowball_connected |>
+    tidygraph::as_tbl_graph() |>
+    ggraph::ggraph(graph = , layout = "stress") +
+    ggraph::geom_edge_link(
+        aes(
+            alpha = ggplot2::after_stat(index),
+            # edge_width = ggplot2::after_stat(index)
+        ),
+        show.legend = FALSE
+    ) +
+    ggraph::geom_node_point(
+        ggplot2::aes(
+            size = cited_by_count_by_year,
+            col = paper_type
+        )
+    ) +
+    ggraph::geom_node_label(
+        ggplot2::aes(
+            filter = key_paper,
+            label = auth_abbr
+        ),
+        nudge_y = 0.2,
+        size = 3
+    ) +
+    ggraph::scale_edge_width(
+        range = c(0.1, 1.5),
+        guide = "none"
+    ) +
+    ggplot2::scale_size(
+        range = c(3, 10),
+        name = "Cited by average count per year"
+    ) +
+    ggplot2::scale_colour_manual(
+        values = c("red", "blue", "green", "yellow", "purple", "orange", "pink", "brown"),
+        na.value = "grey",
+        name = "Key Paper",
+        guide = guide_legend()
+    ) +
+    ggraph::theme_graph() +
+    ggplot2::theme(
+        plot.background = element_rect(fill = "transparent", colour = NA),
+        panel.background = element_rect(fill = "transparent", colour = NA),
+        legend.position = "right"
+    ) +
+    ggplot2::guides(fill = "none") +
+    ggplot2::ggtitle(paste0(" Cited by average count per year"))
+
+ggplot2::ggsave(
+    file.path("figures_comp", "connected.pdf"),
+    plot = p,
+    device = grDevices::cairo_pdf,
+    width = 20,
+    height = 15
+)
+ggplot2::ggsave(
+    file.path("figures_comp", "connected.png"),
+    plot = p,
+    width = 20,
+    height = 15,
+    bg = "white"
+)
+```
+
+![](figures_comp/connected.png)
+
+A highres version can be downloaded [here](figures_comp/connected.pdf).
+
+# Dynamic plot
+
+
+## Connecter Papers Coloured by Chapter
+
+And some dynamic plot of the connected dataset
+
+```{r}
+#| label: plot_dynamic_chapter
+#|
+networkData <- data.frame(
+    src = snowball_connected$edges$from,
+    target = snowball_connected$edges$to,
+    stringsAsFactors = FALSE
+)
+
+nodes <- data.frame(
+    name = snowball_connected$nodes$id,
+    author = IPBES.R::abbreviate_authors(snowball_connected$nodes),
+    doi = snowball_connected$nodes$doi,
+    nodesize = snowball_connected$nodes$cited_by_count / (2024 - snowball_connected$nodes$publication_year) * 0.5,
+    paper_type = snowball_connected$nodes$paper_type,
+    chapter = snowball_connected$nodes$chapter,
+    stringsAsFactors = FALSE
+)
+nodes$id <- 0:(nrow(nodes) - 1)
+
+# create a data frame of the edges that uses id 0:9 instead of their names
+edges <- networkData |>
+    left_join(nodes, by = c("src" = "name")) |>
+    select(-src, -author) |>
+    rename(source = id) |>
+    left_join(nodes, by = c("target" = "name")) |>
+    select(-target, -author) |>
+    rename(target = id) |>
+    mutate(width = 1)
+
+# make a grouping variable that will match to colours
+nodes$group <- nodes$chapter
+
+nodes$oa_id <- nodes$name
+nodes$name <- nodes$author
+
+# control colours with a JS ordinal scale
+ColourScale <- 'd3.scaleOrdinal()
+                        .domain([
+                            "Chapter 2",
+                            "Chapter 4",
+                            "Chapter 2 & Chapter 4",
+                        ])
+                        .range(["blue", "red", "green"]);'
+
+openDOI <- "window.open(d.doi)"
+
+MyClickScript <- 'alert("You clicked " + d.name + " with the doi " +
+             d.doi +  " of your original R data frame");'
+
+nwg_ch <- forceNetwork(
+    Links = edges,
+    Nodes = nodes,
+    Source = "source",
+    Target = "target",
+    NodeID = "name",
+    Nodesize = "nodesize",
+    Group = "chapter",
+    Value = "width",
+    opacity = 0.9,
+    zoom = TRUE,
+    colourScale = JS(ColourScale),
+    fontSize = 40,
+    legend = TRUE,
+    clickAction = openDOI
+)
+
+nwg_ch$x$nodes$doi <- nodes$doi
+
+networkD3::saveNetwork(
+    nwg_ch,
+    file = file.path("figures_comp", "connected_chapter.html"),
+    selfcontained = TRUE
+)
+
+unlink(
+    list.dirs(path = "figures_comp", recursive = FALSE),
+    recursive = TRUE
+)
+
+nwg_ch
+```
+
+You can download the interactive graph [here (right mouse click)](figures_comp/connected.html).
+
+
+## Connecter Papers Coloured by Chapter and Keypaper
+
+And some dynamic plot of the connected dataset
+```{r}
+#| label: plot_dynamic
+#|
+
+networkData <- data.frame(
+    src = snowball_connected$edges$from,
+    target = snowball_connected$edges$to,
+    stringsAsFactors = FALSE
+)
+
+nodes <- data.frame(
+    name = snowball_connected$nodes$id,
+    author = IPBES.R::abbreviate_authors(snowball_connected$nodes),
+    doi = snowball_connected$nodes$doi,
+    nodesize = snowball_connected$nodes$cited_by_count / (2024 - snowball_connected$nodes$publication_year) * 0.5,
+    paper_type = snowball_connected$nodes$paper_type,
+    stringsAsFactors = FALSE
+)
+nodes$id <- 0:(nrow(nodes) - 1)
+
+# create a data frame of the edges that uses id 0:9 instead of their names
+edges <- networkData |>
+    left_join(nodes, by = c("src" = "name")) |>
+    select(-src, -author) |>
+    rename(source = id) |>
+    left_join(nodes, by = c("target" = "name")) |>
+    select(-target, -author) |>
+    rename(target = id) |>
+    mutate(width = 1)
+
+# make a grouping variable that will match to colours
+nodes$group <- nodes$paper_type
+
+nodes$oa_id <- nodes$name
+nodes$name <- nodes$author
+
+# control colours with a JS ordinal scale
+ColourScale <- 'd3.scaleOrdinal()
+                        .domain([
+                            "Ch 2 KP & Ch 4 2 KP",
+                            "Ch 2 KP", "Ch 2 KP & Ch 4 2", "Ch 2",
+                            "Ch 4 2 KP", "Ch 2 KP & Ch 4 2 KP", "Ch 4 2",
+                        ])
+                        .range(["red", "blue", "green", "yellow", "purple", "orange", "pink", "brown"]);'
+
+openDOI <- "window.open(d.doi)"
+
+MyClickScript <- 'alert("You clicked " + d.name + " with the doi " +
+             d.doi +  " of your original R data frame");'
+
+nwg <- forceNetwork(
+    Links = edges,
+    Nodes = nodes,
+    Source = "source",
+    Target = "target",
+    NodeID = "name",
+    Nodesize = "nodesize",
+    Group = "paper_type",
+    Value = "width",
+    opacity = 0.9,
+    zoom = TRUE,
+    colourScale = JS(ColourScale),
+    fontSize = 40,
+    legend = TRUE,
+    clickAction = openDOI
+)
+
+nwg$x$nodes$doi <- nodes$doi
+
+networkD3::saveNetwork(
+    nwg,
+    file = file.path("figures_comp", "connected.html"),
+    selfcontained = TRUE
+)
+
+unlink(
+    list.dirs(path = "figures_comp", recursive = FALSE),
+    recursive = TRUE
+)
+
+nwg
+```
+
+You can download the interactive graph [here (right mouse click)](figures_comp/connected.html).
+
+# Tables
+
+## 
+
+```{r}
+library(DT)
+
+snowball$nodes |>
+    dplyr::select(
+        chapter,
+        paper_type,
+        id,
+        auth_abbr,
+        publication_year,
+        display_name,
+        doi,
+        cited_by_count,
+        cited_by_count_by_year
+    ) |>
+    mutate(doi = sprintf('<a href="%s" target="_blank">%s</a>', doi, doi)) |>
+    datatable(
+        extensions = c(
+            "Buttons",
+            "FixedColumns",
+            "Scroller"
+        ),
+        options = list(
+            dom = "Bfrtip",
+            buttons = list(
+                "copy", 
+                "csv", 
+                "excel", 
+                list(
+                    extend = "pdf",
+                    orientation = "landscape",
+                    customize = JS(
+                        "function(doc) {",
+                         "  doc.defaultStyle.fontSize = 5;",  # Change the font siz
+                         "}"
+                    )
+                ), 
+                "print"
+            ),
+            scroller = TRUE,
+            scrollY = JS("window.innerHeight * 0.7 + 'px'"),
+            scrollX = TRUE,
+            fixedColumns = list(leftColumns = 2)
+        ),
+        escape = FALSE
+    )
+```

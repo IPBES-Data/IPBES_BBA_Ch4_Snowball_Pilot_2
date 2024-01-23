@@ -65,3 +65,4 @@ The aim of this task is to conduct a literature search based on a set of key pap
 ## Reports
 
 - [Snowball Report](snowball.html)
+- [Comparison Chapter 2 & Chapter 4 Pilot 2](comparison_ch2_ch4_2.html)

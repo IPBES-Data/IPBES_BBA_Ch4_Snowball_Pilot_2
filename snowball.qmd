@@ -8,6 +8,12 @@ format:
         embed-resources: true
         code-fold: true
         code-summary: "Show the code"
+        grid:
+            sidebar-width: 0px
+            body-width: 4000px
+            margin-width: 200px
+            gutter-width: 1.5rem      
+
 params:
     key_papers:
         - "from email.csv"
@@ -53,7 +59,7 @@ kp <- read.csv(
 )
 ```
 
-## Back to [Readme](https://IPBES-Data.github.io/IPBES_BBA_Ch2_Snowball_Pilot_2/)
+## Back to [Readme](https://IPBES-Data.github.io/IPBES_BBA_Ch4_Snowball_Pilot_2/)
 
 ## One Generation Snowball
 

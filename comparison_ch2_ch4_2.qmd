@@ -23,8 +23,8 @@ format:
 #| label: setup
 #|
 
-library(tibble)
 suppressPackageStartupMessages({
+    library(tibble)
     library(bibtex)
     library(openalexR)
     library(IPBES.R)
@@ -60,7 +60,7 @@ snowball_ch2 <- readRDS(
     file.path(".", "data_ch2", "snowball.rds")
 )
 snowball_ch2$nodes <- snowball_ch2$nodes |>
-    # dplyr::filter(id %in% selected_papers) |>
+    dplyr::filter(id %in% selected_papers) |>
     dplyr::mutate(
         cited_by_count_by_year = cited_by_count / (2024 - publication_year),
         chapter = "Chapter 2",
@@ -370,7 +370,7 @@ unlink(
 nwg_ch
 ```
 
-You can download the interactive graph [here (right mouse click)](figures_comp/connected.html).
+You can download the interactive graph [here (right mouse click)](figures_comp/connected_chapter.html).
 
 
 ## Connecter Papers Coloured by Chapter and Keypaper
@@ -463,7 +463,9 @@ You can download the interactive graph [here (right mouse click)](figures_comp/c
 
 # Tables
 
-## 
+## Table of papers selected by Chapter 2 and all Chapter 4
+
+```{r}
 
 ```{r}
 library(DT)
